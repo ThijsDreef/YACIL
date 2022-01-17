@@ -1,0 +1,1 @@
+add_library(Sizes SHARED source/main.c)

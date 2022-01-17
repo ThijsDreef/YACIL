@@ -3,10 +3,10 @@
 #include "GrowAbleStream.h"
 
 
-typedef uint32_t YACRLTypeIndex;
+typedef uint32_t YACILTypeIndex;
 // #define TYPE_OFFSET 0x1000
 
-enum YACRLTypes {
+enum YACILTypes {
     STRUCT,
     POINTER,
     ENUM,
@@ -14,7 +14,7 @@ enum YACRLTypes {
     UNION,
 };
 
-enum YACRLKindNumeric {
+enum YACILKindNumeric {
     CHAR,
     SHORT,
     USHORT,
@@ -24,10 +24,10 @@ enum YACRLKindNumeric {
 #define MAX_SIZE_NUMERIC sizeof (unsigned long)
 
 /**
- * YACRL uses the same enums as codeview
+ * YACIL uses the same enums as codeview
 */
 
-enum YACRLBaseTypeMode {
+enum YACILBaseTypeMode {
     Direct = 0x00000000,                // Not a pointer
     NearPointer = 0x00000100,           // Near pointer
     FarPointer = 0x00000200,            // Far pointer
@@ -38,7 +38,7 @@ enum YACRLBaseTypeMode {
     NearPointer128 = 0x00000700         // 128 bit near pointer
 };
 
-enum YACRLPointerMode {
+enum YACILPointerMode {
     Pointer = 0x00,                 // "normal" pointer
     LValueReference = 0x01,         // "old" reference
     PointerToDataMember = 0x02,     // pointer to data member
@@ -46,7 +46,7 @@ enum YACRLPointerMode {
     RValueReference = 0x04          // r-value reference
 };
 
-enum YACRLMethodKind {
+enum YACILMethodKind {
     Vanilla = 0x00,
     Virtual = 0x01,
     Static = 0x02,
@@ -56,7 +56,7 @@ enum YACRLMethodKind {
     PureIntroducingVirtual = 0x06
 };
 
-enum YACRLBaseTypeKind {
+enum YACILBaseTypeKind {
     None = 0x0000,                      // uncharacterized type (no type)
     Void = 0x0003,                      // void
     NotTranslated = 0x0007,             // type not translated by cvpack
@@ -112,69 +112,69 @@ enum YACRLBaseTypeKind {
 };
 
 /**
- * YACRL Numeric type
+ * YACIL Numeric type
  * holds kind and value
 */
-struct YACRLNumeric {
-    enum YACRLKindNumeric numeric;
+struct YACILNumeric {
+    enum YACILKindNumeric numeric;
     uint32_t data;
 };
 
 /**
- * YACRL Header type
+ * YACIL Header type
  * A header in the type stream to denote the length and kind of structure
 */
-struct YACRLHeader {
+struct YACILHeader {
     uint16_t length;
     uint16_t kind;
 };
 
 // /**
-//  * YACRL Member type
+//  * YACIL Member type
 //  * points to type of member using typeindex.
 // */ 
-// struct YACRLMemberType {
+// struct YACILMemberType {
 //     uint32_t typeIndex;
-//     // enum YACRLKindNumeric offset;
+//     // enum YACILKindNumeric offset;
 //     // char name[];
 // };
 ;
 
 // /**
-//  * YACRL Struct type
+//  * YACIL Struct type
 //  * Struct descriptor
 // */ 
-// struct YACRLStruct {
-//     struct YACRLHeader header;
+// struct YACILStruct {
+//     struct YACILHeader header;
 //     uint16_t count;
 //     // char name[];
-//     // struct YACRLMemberType members[];
+//     // struct YACILMemberType members[];
 // };
 
-struct YACRLArray {
-    struct YACRLHeader header;
-    YACRLTypeIndex elementType;
-    YACRLTypeIndex indexType;
+struct YACILArray {
+    struct YACILHeader header;
+    YACILTypeIndex elementType;
+    YACILTypeIndex indexType;
     uint32_t size;
     char name[];
 };
 
 /**
- * YACRL Pointer type
+ * YACIL Pointer type
  * Pointer descriptor
 */ 
-struct YACRLPointer {
-    struct YACRLHeader header;
-    YACRLTypeIndex pointeeTypeIndex;
+struct YACILPointer {
+    struct YACILHeader header;
+    YACILTypeIndex pointeeTypeIndex;
     uint32_t attributes;
 };
 
 // /**
-//  * YACRL function type
+//  * YACIL function type
 //  * Function descriptor names of parameters are unavailable
 // */
-// struct YACRLFunction {
-//     struct YACRLHeader header;
+// struct YACILFunction {
+//     struct YACILHeader header;
 //     uint32_t returnType;
 //     uint8_t callingConvention;
 //     uint16_t numParameters;
@@ -182,42 +182,42 @@ struct YACRLPointer {
 //     // uint32_t parameterIndices[];
 // };
 
-struct YACRLEnumMember {
-    struct YACRLNumeric value;
+struct YACILEnumMember {
+    struct YACILNumeric value;
     char name[];
 };
 
 /**
- * YACRL Enum type
+ * YACIL Enum type
  * Holds all info for a enumerator
 */
-struct YACRLEnum {
-    struct YACRLHeader header;
-    YACRLTypeIndex typeValue;
+struct YACILEnum {
+    struct YACILHeader header;
+    YACILTypeIndex typeValue;
     uint32_t numEnumerators;
     char name[];
     // List of enum members follows.
 };
 
 // /**
-//  * YACRL union type
+//  * YACIL union type
 //  * Describes a union
 // */ah
-// struct YACRLUnionType {
-//     struct YACRLHeader header;
+// struct YACILUnionType {
+//     struct YACILHeader header;
 //     uint16_t memberCount;
-//     // struct YACRLNumeric size
+//     // struct YACILNumeric size
 //     // char name[];
-//     // struct YACRLMemberType members[];
+//     // struct YACILMemberType members[];
 // };
 
 /**
- * YACRL Module
+ * YACIL Module
  * Hold all type information loaded from the module.
 */
-struct YACRLModule {
+struct YACILModule {
     struct GrowAbleStream data;
-    struct YACRLHeader** types;
+    struct YACILHeader** types;
     uint32_t count;
     char* name;
     char* loadedModule; 

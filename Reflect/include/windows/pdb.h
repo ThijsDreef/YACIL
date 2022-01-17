@@ -57,4 +57,4 @@ struct TPIStreamHeader {
 
 
 void load_pdb_file(const char* filename);
-struct YACRLModule* load_yacrl_from_pdb(const char* name);
+struct YACILModule* load_YACIL_from_pdb(const char* name);

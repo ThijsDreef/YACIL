@@ -1,7 +1,7 @@
 #include "windows/pdb.h"
 #include "windows/msf.h"
 #include "windows/CodeViewTypes.h"
-#include "YACRLTypes.h"
+#include "YACILTypes.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -229,9 +229,9 @@ void load_pdb_file(const char* filename) {
     free_msf(&msf);
 }
 
-enum YACRLKindNumeric parse_numeric(void* numericalLeaf) {
+enum YACILKindNumeric parse_numeric(void* numericalLeaf) {
     uint16_t firstBytes = *(uint16_t*)numericalLeaf;
-    if (firstBytes < 0x8000) return (enum YACRLKindNumeric)USHORT;
+    if (firstBytes < 0x8000) return (enum YACILKindNumeric)USHORT;
 
     switch (firstBytes) {
         case LF_CHAR:
@@ -276,13 +276,13 @@ uint32_t getNumericAsUint32(void* numericalLeaf) {
     return value;
 }
 
-GrowableStreamHandle parse_enumerator(struct CodeViewEnumType* enumData, struct CodeViewRecordHeader** lookUpTable, struct YACRLModule* module) {
+GrowableStreamHandle parse_enumerator(struct CodeViewEnumType* enumData, struct CodeViewRecordHeader** lookUpTable, struct YACILModule* module) {
     char* typeName = (char*)enumData + sizeof(struct CodeViewEnumType);
     // setup for parsed data
     size_t recordSize = 0;
-    recordSize += sizeof(struct YACRLEnum);
+    recordSize += sizeof(struct YACILEnum);
     recordSize += strlen(typeName) + 1;
-    struct YACRLEnum* entry = commit_to_growable_stream(&module->data, recordSize);
+    struct YACILEnum* entry = commit_to_growable_stream(&module->data, recordSize);
     GrowableStreamHandle entryHandle = get_imperative_handle(&module->data, entry);
 
     entry->numEnumerators = enumData->NumEnumerators;
@@ -291,7 +291,7 @@ GrowableStreamHandle parse_enumerator(struct CodeViewEnumType* enumData, struct 
 
     struct CodeViewRecordHeader* header = lookUpTable[enumData->FieldListType - 0x1000];
     uint8_t* stream = header;
-    struct YACRLEnumMember* enumerate;
+    struct YACILEnumMember* enumerate;
     size_t offset = 4;
 
     while (offset <= header->recordLength - 2) {
@@ -301,8 +301,8 @@ GrowableStreamHandle parse_enumerator(struct CodeViewEnumType* enumData, struct 
 
         switch (leaf) {
             case LF_ENUMERATE:
-                // create YACRL enumeration member
-                enumerate = commit_to_growable_stream(&module->data, sizeof(struct YACRLEnumMember));
+                // create YACIL enumeration member
+                enumerate = commit_to_growable_stream(&module->data, sizeof(struct YACILEnumMember));
 
                 // skip over code view enumerator
                 offset += sizeof(struct CodeViewEnumerator);
@@ -316,7 +316,7 @@ GrowableStreamHandle parse_enumerator(struct CodeViewEnumType* enumData, struct 
 
                 // Append typename to end of buffer
                 strcpy(commit_to_growable_stream(&module->data, strlen(stream + offset) + 1), stream + offset);
-                recordSize += strlen(stream + offset) + 1 + sizeof (struct YACRLEnumMember);
+                recordSize += strlen(stream + offset) + 1 + sizeof (struct YACILEnumMember);
 
                 // move offset along by size of typename
                 offset += strlen(stream + offset) + 1;
@@ -344,36 +344,36 @@ GrowableStreamHandle parse_enumerator(struct CodeViewEnumType* enumData, struct 
     return entryHandle;
 }
 
-GrowableStreamHandle parse_pointer(struct CodeViewPointer* cvPointer, YACRLTypeIndex** yacrlLookupTable, struct YACRLModule* module) {
-    struct YACRLPointer* parsed = commit_to_growable_stream(&module->data, sizeof(struct YACRLPointer));
+GrowableStreamHandle parse_pointer(struct CodeViewPointer* cvPointer, YACILTypeIndex** YACILLookupTable, struct YACILModule* module) {
+    struct YACILPointer* parsed = commit_to_growable_stream(&module->data, sizeof(struct YACILPointer));
 
     parsed->attributes = cvPointer->attributes;
-    parsed->pointeeTypeIndex = cvPointer->pointeeType > 0x8000 ? yacrlLookupTable[cvPointer->pointeeType - 0x1000] : cvPointer->pointeeType;
+    parsed->pointeeTypeIndex = cvPointer->pointeeType > 0x8000 ? YACILLookupTable[cvPointer->pointeeType - 0x1000] : cvPointer->pointeeType;
     parsed->header.kind = POINTER;
-    parsed->header.length = sizeof(struct YACRLPointer);
+    parsed->header.length = sizeof(struct YACILPointer);
 
     return get_imperative_handle(&module->data, parsed);
 }
 
-GrowableStreamHandle parse_array(struct CodeViewArrayType* cvArray, YACRLTypeIndex** yacrlLookUpTable, struct YACRLModule* module) {
+GrowableStreamHandle parse_array(struct CodeViewArrayType* cvArray, YACILTypeIndex** YACILLookUpTable, struct YACILModule* module) {
     uint32_t numericalValue = getNumericAsUint32((uint8_t*)cvArray + sizeof(struct CodeViewArrayType));
     char* name = (uint8_t*)cvArray + size_of_numerical_leaf((uint8_t*)cvArray + sizeof(struct CodeViewArrayType));
-    struct YACRLArray* yacrlArray = commit_to_growable_stream(&module->data, sizeof(struct YACRLArray) + strlen(name) + 1);
+    struct YACILArray* YACILArray = commit_to_growable_stream(&module->data, sizeof(struct YACILArray) + strlen(name) + 1);
 
-    yacrlArray->elementType = cvArray->elementType > 0x8000 ? yacrlLookUpTable[cvArray->elementType - 0x1000] : cvArray->elementType;
-    yacrlArray->indexType = cvArray->elementType > 0x8000 ? yacrlLookUpTable[cvArray->indexType - 0x1000] : cvArray->indexType;
-    yacrlArray->size = numericalValue;
-    strcpy(yacrlArray->name, name);
+    YACILArray->elementType = cvArray->elementType > 0x8000 ? YACILLookUpTable[cvArray->elementType - 0x1000] : cvArray->elementType;
+    YACILArray->indexType = cvArray->elementType > 0x8000 ? YACILLookUpTable[cvArray->indexType - 0x1000] : cvArray->indexType;
+    YACILArray->size = numericalValue;
+    strcpy(YACILArray->name, name);
 
-    return get_imperative_handle(&module->data, yacrlArray);
+    return get_imperative_handle(&module->data, YACILArray);
 }
 
-GrowableStreamHandle parse_union(struct CodeViewUnionType* cvUnion, YACRLTypeIndex** yacrlLookupTable, struct YACRLModule* module) {
+GrowableStreamHandle parse_union(struct CodeViewUnionType* cvUnion, YACILTypeIndex** YACILLookupTable, struct YACILModule* module) {
   
 }
 
-struct YACRLModule* load_yacrl_from_pdb(const char* name) {
-    struct YACRLModule* result = malloc(sizeof(struct YACRLModule));
+struct YACILModule* load_YACIL_from_pdb(const char* name) {
+    struct YACILModule* result = malloc(sizeof(struct YACILModule));
     result->count = 0;
     result->loadedModule = malloc(strlen(name) + 5);
     strcpy(result->loadedModule, name);
@@ -389,7 +389,7 @@ struct YACRLModule* load_yacrl_from_pdb(const char* name) {
     uint8_t* tpiStreamData = (uint8_t*)tpiStream.data + sizeof(struct TPIStreamHeader);
     uint8_t* ipiStreamData = (uint8_t*)ipiStream.data + sizeof(struct TPIStreamHeader);
     struct CodeViewRecordHeader** lookUpTable = malloc(sizeof(struct CodeViewRecordHeader*) * amountTypes);
-    YACRLTypeIndex* yacrlLookUpTable = malloc(sizeof(YACRLTypeIndex) * amountTypes);
+    YACILTypeIndex* YACILLookUpTable = malloc(sizeof(YACILTypeIndex) * amountTypes);
 
     for (size_t i = 0; i < amountTypes; i++) {
         struct CodeViewRecordHeader* record = tpiStreamData;
@@ -409,7 +409,7 @@ struct YACRLModule* load_yacrl_from_pdb(const char* name) {
                 struct CodeViewUnionType* uinionInfo = tpiStreamData;
                 break;
             case LF_ARRAY:
-                parse_array(record, yacrlLookUpTable, result);
+                parse_array(record, YACILLookUpTable, result);
                 result->count++;
                 break;
             case LF_ENUM:
@@ -417,13 +417,13 @@ struct YACRLModule* load_yacrl_from_pdb(const char* name) {
                 result->count++;
                 break;
             case LF_POINTER:
-                parse_pointer(record, yacrlLookUpTable, result);
+                parse_pointer(record, YACILLookUpTable, result);
                 result->count++;
                 break;
             default:
                 break;
         }
-        yacrlLookUpTable[i] = result->count;
+        YACILLookUpTable[i] = result->count;
         tpiStreamData += record->recordLength + 2;
     }
 
@@ -432,17 +432,17 @@ struct YACRLModule* load_yacrl_from_pdb(const char* name) {
     size_t size = result->data.used;
     size_t index = 0;
 
-    result->types = malloc(sizeof(struct YACRLHeader*) * result->count);
+    result->types = malloc(sizeof(struct YACILHeader*) * result->count);
 
     while (offset <= size && index != result->count) {
-        struct YACRLHeader* header = data + offset;
+        struct YACILHeader* header = data + offset;
         result->types[index] = header;
         index++;
         offset += header->length;
     }
 
     free(lookUpTable);
-    free(yacrlLookUpTable);
+    free(YACILLookUpTable);
 
     return result;
 }

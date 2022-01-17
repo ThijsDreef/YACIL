@@ -1,13 +1,13 @@
 #include "windows/pdb.h"
-#include "YACRL.h"
+#include "YACIL.h"
 #include <stdio.h>
 
 int main() {
-    struct YACRLModule* sizes = load_from_debug("Sizes");
+    struct YACILModule* sizes = load_from_debug("Sizes");
     printf("count: %d\n", sizes->count);
-    struct YACRLEnum* shapeVariants = find_enum_by_name(sizes, "ShapeVariant");
+    struct YACILEnum* shapeVariants = find_enum_by_name(sizes, "ShapeVariant");
     if (shapeVariants == NULL) printf("No ENUM shape variant present in the compilation unit");
-    struct YACRLEnumMember** members = find_enum_members(shapeVariants);
+    struct YACILEnumMember** members = find_enum_members(shapeVariants);
 
     printf("found enum: %s\n", shapeVariants->name);
     for (size_t i = 0; i < shapeVariants->numEnumerators; i++) {
